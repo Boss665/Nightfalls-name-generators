@@ -10,5 +10,6 @@
 
 Please contact me at: 
 Email: ipgznlic@streetwormail.com
+Alternate email: k4h4u3jed@mozmail.com
 Alternate email: jltoeqke@tubermail.com
 Discord: _.chh
