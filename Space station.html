@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Station Name Generator</title>
+  <style>
+    :root{
+      --panel: rgba(16, 23, 38, 0.88);
+      --panel-border: rgba(51, 153, 255, 0.35);
+      --text: #e6f0ff;
+      --muted: rgba(230, 240, 255, 0.75);
+      --accent: #0077ff;
+      --accent2: #3399ff;
+    }
+
+    *{ box-sizing: border-box; }
+
+    body{
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #0b0f1a, #05070d);
+    }
+
+    /* Starfield canvas behind everything */
+    #starfield{
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+    }
+
+    .wrap{
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .container{
+      width: min(560px, 92vw);
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 22px 22px 18px;
+      box-shadow: 0 0 35px rgba(0, 140, 255, 0.22);
+      backdrop-filter: blur(10px);
+    }
+
+    h1{
+      margin: 0 0 12px;
+      font-size: 1.35rem;
+      letter-spacing: 0.6px;
+    }
+
+    label{
+      display: block;
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin: 10px 0 6px;
+    }
+
+    .grid{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .full{ grid-column: 1 / -1; }
+
+    select, button{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(230, 240, 255, 0.16);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    select{
+      background: rgba(26, 35, 54, 0.9);
+      color: var(--text);
+    }
+
+    button{
+      margin-top: 10px;
+      background: var(--accent);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      color: white;
+      cursor: pointer;
+      transition: 0.2s ease;
+      font-weight: 700;
+    }
+
+    button:hover{ background: var(--accent2); }
+
+    .row{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toggle{
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(230, 240, 255, 0.14);
+      background: rgba(10, 14, 24, 0.35);
+      color: var(--muted);
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    .toggle input{ transform: translateY(1px); }
+
+    .output{
+      margin-top: 16px;
+      padding: 12px 12px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(230, 240, 255, 0.14);
+      background: rgba(10, 14, 24, 0.35);
+      min-height: 72px;
+    }
+
+    .name{
+      font-size: 1.25rem;
+      font-weight: 850;
+      line-height: 1.25;
+      letter-spacing: 0.2px;
+      word-break: break-word;
+    }
+
+    .meta{
+      margin-top: 6px;
+      font-size: 0.92rem;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill{
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(230, 240, 255, 0.14);
+      background: rgba(0, 119, 255, 0.10);
+    }
+
+    .hint{
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: rgba(230, 240, 255, 0.58);
+      line-height: 1.35;
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85em;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(230, 240, 255, 0.18);
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    @media (max-width: 560px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+
+  <div class="wrap">
+    <div class="container">
+      <h1>Space Station Name Generator</h1>
+
+      <div class="grid">
+        <div class="full">
+          <label for="tierSelect">Station tier</label>
+          <select id="tierSelect">
+            <option value="any">Any tier</option>
+            <option value="megapolis">Space Megapolis</option>
+            <option value="command">Command Centre</option>
+            <option value="city">Space City</option>
+            <option value="fortress">Fortress Station</option>
+            <option value="autofortress">Automated Fortress</option>
+            <option value="hub">Trade Hub</option>
+            <option value="shipyard">Shipyard / Dockyards</option>
+            <option value="depot">Depot</option>
+            <option value="outpost">Outpost</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="setSelect">Naming set</label>
+          <select id="setSelect">
+            <option value="any">Any set</option>
+            <option value="classic">Classic Naval</option>
+            <option value="industrial">Industrial &amp; Logistics</option>
+            <option value="ancient">Ancient Relic</option>
+            <option value="corporate">Corporate</option>
+            <option value="frontier">Frontier</option>
+            <option value="arcane">Arcane / Cult</option>
+            <option value="utopian">Utopian Civic</option>
+            <option value="pirate">Pirate Freehold</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="flavourSelect">Flavour</label>
+          <select id="flavourSelect">
+            <option value="any">Any</option>
+            <option value="neutral">Neutral</option>
+            <option value="military">Military</option>
+            <option value="civilian">Civilian</option>
+            <option value="commercial">Commercial</option>
+          </select>
+        </div>
+
+        <div class="full row">
+          <label class="toggle"><input id="serialToggle" type="checkbox" checked /> Add serial or numeral</label>
+          <label class="toggle"><input id="theToggle" type="checkbox" /> Prefix with “The” sometimes</label>
+          <label class="toggle"><input id="hyphenToggle" type="checkbox" checked /> Allow hyphenated codes</label>
+        </div>
+
+        <div class="full">
+          <button id="genBtn" type="button">Generate name</button>
+        </div>
+      </div>
+
+      <div class="output" aria-live="polite">
+        <div class="name" id="output">—</div>
+        <div class="meta" id="meta"></div>
+      </div>
+
+      <div class="hint">
+        Tip: Press <span class="kbd">G</span> to generate. This is one self-contained HTML file.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tiers = {
+      megapolis: "Space Megapolis",
+      command: "Command Centre",
+      city: "Space City",
+      fortress: "Fortress Station",
+      autofortress: "Automated Fortress",
+      hub: "Trade Hub",
+      shipyard: "Shipyard / Dockyards",
+      depot: "Depot",
+      outpost: "Outpost"
+    };
+
+    const shared = {
+      numerals: ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV"],
+      digits: ["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25"],
+      greek: ["Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Eta","Theta","Iota","Kappa","Lambda","Mu","Nu","Xi","Omicron","Pi","Rho","Sigma","Tau","Upsilon","Phi","Chi","Psi","Omega"],
+      sectors: ["Aster","Kestrel","Sable","Crown","Rift","Sundive","Helio","Noctis","Horizon","Gallows","Warden","Zephyr","Vesper","Obsidian","Radiant","Keystone","Orion","Atlas","Titan","Meridian","Caldera","Harrow","Lantern","Mosaic"],
+      adjectives: {
+        neutral: ["Nova","Astra","Zenith","Horizon","Eclipse","Nebula","Celestial","Meridian","Keystone","Solstice","Umbra","Aurora","Peregrine","Seraphic","Astral","Luminous","Penumbral","Radiant"],
+        military: ["Vanguard","Iron","Aegis","Warden","Sentinel","Vigil","Hammer","Bulwark","Glaive","Bastion","Reaver","Talon","Spear","Rampart","Viper","Anvil","Phalanx","Redoubt"],
+        civilian: ["Haven","Bright","Kindred","Civic","Hearth","Garden","Gentle","Lumen","Wellspring","Harbour","Welcome","Sunrise","Amber","Juniper","Serene","Open","Neighbourly","Verdant"],
+        commercial: ["Mercantile","Golden","Prosper","Trade","Open","Free","Union","Exchange","Port","Ledger","Coin","Transit","Cargo","Market","Commerce","Broker","Consortium","Tariff-Free"]
+      },
+      stationTypes: {
+        megapolis: ["Arcology","Sprawl","Ring","Halo","Lattice","Habitat","Shell","City-Ring","Orbital City"],
+        command: ["Command","Operations","Strategic Node","Fleet HQ","War Room","Control","C2 Nexus","Command Spire"],
+        city: ["City","Commons","Habitat","Concourse","Ward","District","Promenade","Boulevard"],
+        fortress: ["Citadel","Bastion","Bulwark","Redoubt","Keep","Rampart","Stronghold","Bunker Ring"],
+        autofortress: ["Sentinel","Autoredoubt","Aegis","Ward","Bulwark","Watch","Sentry Array","Defence Lattice"],
+        hub: ["Exchange","Hub","Agora","Bazaar","Crossing","Mart","Concilium","Transit Crown"],
+        shipyard: ["Shipyards","Dockyards","Yards","Keelworks","Drydock","Orbital Works","Slipway","Fabrication Ring"],
+        depot: ["Depot","Store","Magazine","Relay","Cache","Node","Stack","Hold"],
+        outpost: ["Outpost","Anchor","Waypoint","Lighthouse","Spur","Rendezvous","Camp","Lookout"],
+      }
+    };
+
+    const dataSets = {
+      classic: {
+        label: "Classic Naval",
+        prefixes: ["Nova","Astra","Orion","Vanguard","Helios","Eclipse","Titan","Atlas","Celestial","Zenith","Horizon","Nebula","Obsidian","Radiant","Solar","Argent","Sable","Pioneer","Valiant","Cygnet","Dauntless","Resolute"],
+        cores: ["Prime","Spire","Haven","Citadel","Bastion","Gate","Reach","Crown","Anchor","Nexus","Harbour","Forge","Vault","Frontier","Axis","Sanctum","Beacon","Palisade","Strand","Concord","Pillar","Aerie"],
+        suffixes: ["Station","Platform","Array","Hold","Ring","Complex","Enclave","Node"],
+        myth: ["Ariadne","Daedalus","Icarus","Hyperion","Astraea","Nemesis","Hecate","Janus","Orpheus","Perseus","Odysseus","Cassiopeia","Andromeda","Prometheus","Bellona","Sol Invictus"],
+      },
+
+      industrial: {
+        label: "Industrial & Logistics",
+        prefixes: ["Iron","Cargo","Grav","Bulk","Tug","Foundry","Kiln","Rivet","Sprocket","Weld","Pallet","Spindle","Crucible","Rail","Dock","Press","Ore","Fuel","Freight","Loader","Chute","Clamp","Gantry"],
+        cores: ["Terminal","Stack","Relay","Switch","Junction","Bunker","Bay","Module","Lattice","Spine","Clamp","Gantry","Silo","Arc","Conduit","Depot","Annex","Vault","Crane","Tether"],
+        suffixes: ["Complex","Works","Facility","Node","Ring","Spur","Station","Grid"],
+        myth: ["Hephaestus","Vulcan","Brontes","Steropes","Arges","Wayfarer","Longhaul","Nightshift","Rivet Saint","Kiln King","The Shiftmaster","The Ledger"],
+      },
+
+      ancient: {
+        label: "Ancient Relic",
+        prefixes: ["Eidolon","Khepri","Ophion","Aurelian","Seraph","Threnody","Cenotaph","Votive","Lament","Glyph","Oracle","Sarcophagus","Elysian","Obelisk","Covenant","Basilica","Hierophant","Psalter"],
+        cores: ["Sanctuary","Reliquary","Cairn","Temple","Archive","Monolith","Hollow","Catacomb","Scriptorium","Labyrinth","Chapel","Ossuary","Narthex","Antechamber","Pillar","Mandate","Axiom","Chorus"],
+        suffixes: ["Spire","Vault","Ring","Station","Chorus","Crown","Gate","Beacon"],
+        myth: ["Sumer","Akkad","Byzantium","Ur","Delphi","Helike","Amun","Anubis","Ishtar","Mithras","Ananke","Nyx","Erebus","Aether","Orison","The First Map"],
+      },
+
+      corporate: {
+        label: "Corporate",
+        prefixes: ["Apex","Omni","Hyper","Vertex","Blue","Red","Silver","Prime","Union","Sino","Nord","Helix","Kronos","Stellar","Quantum","Palisade","Cipher","Gold","Summit","Lattice","Merger","Brightline"],
+        cores: ["Holdings","Group","Consortium","Logistics","Security","Habitat","Port","Exchange","Systems","Industries","Works","Solutions","Manufacturing","Orbital","Operations","Ventures","Partners","Trust","Revenue","Procurement"],
+        suffixes: ["Campus","Platform","Hub","Arc","Ring","Centre","Station","Annex"],
+        myth: ["Board","Directorate","Compliance","Acquisitions","Brand","Portfolio","Venture","Risk Office","Quartermaster"],
+      },
+
+      frontier: {
+        label: "Frontier",
+        prefixes: ["Dust","Far","Grey","Wayward","Juniper","Cinder","Ridge","Sundown","Moonsong","Tin","Wells","Sage","Kettle","Fox","Drift","Ranger","Grit","Hollow","Beacon","Wagon","Dove","Cairn"],
+        cores: ["Crossing","Homestead","Waystation","Lodge","Prospect","Switchback","Landing","Pass","Waterhole","Cabin","Gulch","Prairie","Trail","Lookout","Outfit","Spur","Campfire","Causeway","Picket"],
+        suffixes: ["Post","Outpost","Station","Camp","Anchor","Depot","Ring","Haven"],
+        myth: ["Old Star","Long Night","Sun Dog","The Quiet","Red Sky","Tin Saint","Wanderer","Homefire","The Last Mile"],
+      },
+
+      arcane: {
+        label: "Arcane / Cult",
+        prefixes: ["Umbral","Void","Chorus","Scarlet","Ashen","Pale","Black","Crownless","Hallowed","Mirrored","Sable","Gilded","Salt","Veil","Sorrow","Night","Lacquer","Thorn"],
+        cores: ["Coven","Choir","Reliquary","Liturgy","Vesper","Sigil","Throne","Script","Candle","Mandate","Cairn","Oracle","Grail","Cathedral","Pact","Writ","Vigil","Canticle"],
+        suffixes: ["Sanctum","Temple","Vault","Spire","Station","Gate","Chamber","Crown"],
+        myth: ["The Ninth","The Sleeper","The Lantern","Red Choir","Glass Saint","The Ink","The Veil","The Hollow King","The Salt Oath"],
+      },
+
+      utopian: {
+        label: "Utopian Civic",
+        prefixes: ["Common","Bright","Civic","Concord","Harmonic","Verdant","Lumen","Morrow","Kindred","Unity","Dawn","Hearth","Wellspring","Auroral","Roseglass","New"],
+        cores: ["Forum","Atrium","Garden","Concourse","Assembly","Promenade","Spiral","Terrace","Orchard","Library","Arcade","Crescent","Harbour","District","Plaza","Boulevard"],
+        suffixes: ["City","Station","Habitat","Ring","Arcology","Centre"],
+        myth: ["The Charter","First Bloom","Open Accord","Sunrise Pact","The Gentle Year"],
+      },
+
+      pirate: {
+        label: "Pirate Freehold",
+        prefixes: ["Black","Rogue","Free","Salt","Grin","Skull","Rattle","Knave","Sable","Crack","Burn","Scav","Ransom","Wicked","Red","Broken"],
+        cores: ["Cove","Hideout","Freehold","Jackpot","Junkyard","Hollow","Den","Rack","Spur","Latch","Hold","Nest","Hook","Cistern","Shanty","Slip"],
+        suffixes: ["Station","Dock","Yards","Outpost","Ring"],
+        myth: ["Deadman","The Grinning Star","Old Knife","The Lucky Wreck","Salt Queen","Rattlejack"],
+      }
+    };
+
+    const noSuffixTokens = [
+      "station","platform","complex","hub","ring","spire","vault","sanctum","shipyards","dockyards","yards","keelworks","drydock","outpost","depot","citadel","bastion","bulwark","redoubt","exchange","campus","centre","post","camp","port","harbour"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+
+    function rand(arr){
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function chance(p){
+      return Math.random() < p;
+    }
+
+    function pickTier(key){
+      if (key !== "any") return key;
+      return rand(Object.keys(tiers));
+    }
+
+    function pickSet(key){
+      if (key !== "any") return { key, ...dataSets[key] };
+      const keys = Object.keys(dataSets);
+      const k = rand(keys);
+      return { key: k, ...dataSets[k] };
+    }
+
+    function pickFlavour(key){
+      if (key !== "any") return key;
+      return rand(["neutral","military","civilian","commercial"]);
+    }
+
+    function makeCode(allowHyphen){
+      const a = rand(shared.greek);
+      const b = rand(shared.digits);
+      if (!allowHyphen) return a + " " + b;
+      return chance(0.5) ? (a + "-" + b) : (a + " " + b);
+    }
+
+    function makeSerial(enabled, allowHyphen){
+      if (!enabled) return "";
+      const roll = Math.random();
+      if (roll < 0.45) return " " + rand(shared.numerals);
+      if (roll < 0.75) return " " + makeCode(allowHyphen);
+      return " " + rand(shared.sectors) + "-" + rand(shared.digits);
+    }
+
+    function titleCaseWord(word){
+      if (!word) return word;
+      return word[0].toUpperCase() + word.slice(1);
+    }
+
+    function containsAnyToken(text, tokens){
+      const t = text.toLowerCase();
+      for (const tok of tokens){
+        if (t.includes(tok)) return true;
+      }
+      return false;
+    }
+
+    function buildName(tierKey, set, flavourKey, options){
+      const serial = makeSerial(options.serial, options.hyphen);
+      const allowThe = options.the;
+      const allowHyphen = options.hyphen;
+
+      const adjPool = shared.adjectives[flavourKey] || shared.adjectives.neutral;
+
+      const P = () => rand(set.prefixes);
+      const C = () => rand(set.cores);
+      const S = () => rand(set.suffixes);
+      const A = () => rand(adjPool);
+      const M = () => rand(set.myth);
+
+      const kind = rand(shared.stationTypes[tierKey]);
+      const code = makeCode(allowHyphen);
+
+      const patterns = {
+        megapolis: [
+          () => P() + " " + C() + " " + kind + serial,
+          () => A() + " " + kind + " " + C() + serial,
+          () => M() + " " + kind + serial,
+          () => P() + " " + kind + " " + rand(["Prime","Grand","Crown","Keystone","High"] ) + serial
+        ],
+        command: [
+          () => A() + " " + rand(["Fleet","Strategic","Command","Operations","Overwatch","Directive"]) + " " + C() + serial,
+          () => P() + " " + kind + ": " + code,
+          () => rand(["HQ","C2","Ops","Flag"]) + " " + P() + " " + C() + serial,
+          () => M() + " " + rand(["Mandate","Directive","Overwatch","Order"]) + serial
+        ],
+        city: [
+          () => P() + " " + C() + " " + kind + serial,
+          () => A() + " " + rand(["Commons","Concourse","Promenade","Ward","District"]) + " " + C() + serial,
+          () => rand(["New","Upper","Lower","Central","Old"]) + " " + P() + " " + kind + serial,
+          () => M() + " " + rand(["District","Habitat","Quarter","Promenade"]) + serial
+        ],
+        fortress: [
+          () => A() + " " + kind + " " + C() + serial,
+          () => P() + " " + kind + serial,
+          () => rand(["Fort","Citadel","Bastion"]) + " " + P() + "-" + C() + serial,
+          () => M() + " " + rand(["Bulwark","Redoubt","Rampart","Keep"]) + serial
+        ],
+        autofortress: [
+          () => rand(["SENTINEL","AEGIS","WARDEN","BULWARK","LOCKSTEP"]) + "-" + rand(shared.digits) + " " + P() + serial,
+          () => A() + " " + kind + " " + code,
+          () => P() + " " + rand(["Autoredoubt","Sentry Array","Watchnode","Defence Lattice"]) + " " + rand(shared.digits),
+          () => M() + " " + rand(["Kill-Box","Overwatch","Lockstep","No-Go"]) + " " + code
+        ],
+        hub: [
+          () => P() + " " + C() + " " + kind + serial,
+          () => rand(["Port","Freeport","Exchange","Transit","Market"]) + " " + P() + serial,
+          () => A() + " " + kind + " " + C() + serial,
+          () => M() + " " + rand(["Agora","Exchange","Crossing","Bazaar"]) + serial
+        ],
+        shipyard: [
+          () => P() + " " + C() + " " + kind + serial,
+          () => P() + " " + rand(["Orbital","Deep-Space","High-Orbit","Tethered","Superheavy"]) + " " + kind + serial,
+          () => A() + " " + rand(["Keelworks","Slipway","Drydock","Fabrication Ring","Hullforge"]) + " " + code,
+          () => rand(["Yard","Dock","Drydock","Slip"]) + " " + P() + "-" + C() + " " + rand(shared.digits),
+          () => M() + " " + rand(["Foundry","Keelworks","Forge Yards","Hullworks"]) + serial
+        ],
+        depot: [
+          () => P() + " " + C() + " " + kind + serial,
+          () => rand(["Logistics","Transit","Fuel","Munitions","Medical","Salvage","Customs","Cold Storage"]) + " " + kind + " " + code,
+          () => A() + " " + rand(["Cache","Relay","Magazine","Stack","Hold"]) + " " + rand(shared.digits),
+          () => M() + " " + rand(["Store","Depot","Hold","Relay"]) + serial
+        ],
+        outpost: [
+          () => P() + " " + C() + " " + kind + serial,
+          () => rand(["Waypoint","Anchor","Lighthouse","Rendezvous","Lookout"]) + " " + P() + " " + rand(shared.digits),
+          () => A() + " " + kind + " " + rand(shared.sectors) + serial,
+          () => M() + " " + rand(["Spur","Camp","Lookout","Anchor"]) + serial
+        ]
+      };
+
+      const base = rand((patterns[tierKey] || patterns.outpost))();
+      const named = (allowThe && chance(0.35)) ? ("The " + base) : base;
+
+      if (chance(0.18) && !containsAnyToken(named, noSuffixTokens)){
+        return named + " " + S();
+      }
+
+      return named;
+    }
+
+    function generate(){
+      const tierKey = pickTier($("tierSelect").value);
+      const set = pickSet($("setSelect").value);
+      const flavourKey = pickFlavour($("flavourSelect").value);
+
+      const options = {
+        serial: $("serialToggle").checked,
+        the: $("theToggle").checked,
+        hyphen: $("hyphenToggle").checked
+      };
+
+      const name = buildName(tierKey, set, flavourKey, options);
+
+      $("output").textContent = name;
+      $("meta").innerHTML =
+        '<span class="pill">' + tiers[tierKey] + '</span>' +
+        '<span class="pill">' + set.label + '</span>' +
+        '<span class="pill">' + titleCaseWord(flavourKey) + '</span>';
+    }
+
+    $("genBtn").addEventListener("click", generate);
+    window.addEventListener("keydown", (e) => {
+      if ((e.key || "").toLowerCase() === "g") generate();
+    });
+
+    generate();
+
+    // Starfield
+    const starCanvas = document.getElementById("starfield");
+    const ctx = starCanvas.getContext("2d");
+
+    let W = 0;
+    let H = 0;
+    let stars = [];
+
+    function spawnStar(initial){
+      const z = Math.random() * 0.9 + 0.1;
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        z,
+        r: (Math.random() * 1.6 + 0.2) / z,
+        v: (Math.random() * 0.35 + 0.08) / z,
+        tw: Math.random() * Math.PI * 2,
+        a: initial ? Math.random() : 0
+      };
+    }
+
+    function resize(){
+      const dpr = window.devicePixelRatio || 1;
+      W = starCanvas.width = Math.floor(window.innerWidth * dpr);
+      H = starCanvas.height = Math.floor(window.innerHeight * dpr);
+      starCanvas.style.width = window.innerWidth + "px";
+      starCanvas.style.height = window.innerHeight + "px";
+
+      const count = Math.floor((window.innerWidth * window.innerHeight) / 9000);
+      const n = Math.max(160, Math.min(600, count));
+      stars = new Array(n).fill(0).map(() => spawnStar(true));
+    }
+
+    function tick(){
+      const dpr = window.devicePixelRatio || 1;
+      ctx.clearRect(0, 0, W, H);
+
+      const grad = ctx.createRadialGradient(W * 0.5, H * 0.35, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.65);
+      grad.addColorStop(0, "rgba(40, 80, 170, 0.10)");
+      grad.addColorStop(1, "rgba(0, 0, 0, 0.48)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      for (let i = 0; i < stars.length; i++){
+        const s = stars[i];
+        s.tw += 0.03 + (s.z * 0.02);
+        s.a = Math.min(1, s.a + 0.01);
+
+        s.x += s.v * 0.9 * dpr;
+        s.y += s.v * 0.65 * dpr;
+
+        if (s.x > W + 12 || s.y > H + 12){
+          stars[i] = spawnStar(false);
+          stars[i].x = -12;
+          stars[i].y = Math.random() * H;
+        }
+
+        const twinkle = (Math.sin(s.tw) + 1) * 0.5;
+        const alpha = (0.15 + twinkle * 0.65) * s.a;
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(230, 240, 255, " + alpha + ")";
+        ctx.fill();
+
+        if (Math.random() < 0.0022){
+          const len = (18 + Math.random() * 40) * dpr;
+          ctx.strokeStyle = "rgba(230, 240, 255, " + (alpha * 0.6) + ")";
+          ctx.lineWidth = 1 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(s.x - len, s.y - len * 0.35);
+          ctx.stroke();
+        }
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+    tick();
+  </script>
+</body>
+</html>
